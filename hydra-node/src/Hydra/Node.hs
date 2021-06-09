@@ -15,6 +15,7 @@ import Control.Exception.Safe (MonadThrow)
 import Control.Monad.Class.MonadAsync (MonadAsync, async)
 import Control.Monad.Class.MonadSTM (MonadSTM (STM), atomically, newTVar, stateTVar)
 import Control.Monad.Class.MonadTimer (MonadTimer, threadDelay)
+import Hydra.Architecture.Annotations (Architecture (Component))
 import Hydra.HeadLogic (
   ClientRequest (..),
   ClientResponse (..),
@@ -35,6 +36,7 @@ import Hydra.Network (HydraNetwork (..))
 
 -- ** Create and run a hydra node
 
+{-# ANN type HydraNode Component #-}
 data HydraNode tx m = HydraNode
   { eq :: EventQueue m (Event tx)
   , hn :: HydraNetwork tx m
@@ -121,6 +123,7 @@ processEffect HydraNode{hn, oc, sendResponse, eq} tracer e = do
 -- NOTE(SN): this probably should be bounded and include proper logging
 -- NOTE(SN): handle pattern, but likely not required as there is no need for an
 -- alternative implementation
+{-# ANN type EventQueue Component #-}
 data EventQueue m e = EventQueue
   { putEvent :: e -> m ()
   , nextEvent :: m e
@@ -138,6 +141,7 @@ createEventQueue = do
 -- ** HydraHead handle to manage a single hydra head state concurrently
 
 -- | Handle to access and modify a Hydra Head's state.
+{-# ANN type HydraHead Component #-}
 data HydraHead tx m = HydraHead
   { modifyHeadState :: forall a. (HeadState tx -> (a, HeadState tx)) -> STM m a
   , ledger :: Ledger tx
@@ -166,6 +170,7 @@ data ChainError = ChainError
   deriving (Exception, Show)
 
 -- | Handle to interface with the main chain network
+{-# ANN type OnChain Component #-}
 newtype OnChain m = OnChain
   { -- | Construct and send a transaction to the main chain corresponding to the
     -- given 'OnChainTx' event.

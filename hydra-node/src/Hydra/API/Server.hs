@@ -6,6 +6,7 @@ module Hydra.API.Server where
 import Cardano.Prelude hiding (Option, option)
 import Control.Concurrent.STM (TChan, dupTChan, readTChan)
 import qualified Data.Text as Text
+import Hydra.Architecture.Annotations (Architecture (Component))
 import Hydra.HeadLogic (
   ClientResponse,
  )
@@ -26,6 +27,7 @@ data APIServerLog
   | APIInvalidRequest {receivedRequest :: Text}
   deriving (Show)
 
+{-# ANN runAPIServer Component #-}
 runAPIServer ::
   Tx tx =>
   Read tx =>

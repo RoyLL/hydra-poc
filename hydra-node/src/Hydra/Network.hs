@@ -29,6 +29,7 @@ import Control.Monad (fail)
 import Data.IP (IP)
 import qualified Data.List as List
 import Data.String (String)
+import Hydra.Architecture.Annotations (Architecture (Component))
 import Hydra.HeadLogic (HydraMessage (..), NetworkEvent (..))
 import Network.Socket (HostName, PortNumber)
 import Network.TypedProtocol.Pipelined ()
@@ -36,6 +37,7 @@ import Network.TypedProtocol.Pipelined ()
 -- * Hydra network interface
 
 -- | Handle to interface with the hydra network and send messages "off chain".
+{-# ANN type HydraNetwork Component #-}
 newtype HydraNetwork tx m = HydraNetwork
   { -- | Send a 'HydraMessage' to the whole hydra network.
     broadcast :: HydraMessage tx -> m ()

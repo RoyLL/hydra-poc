@@ -67,7 +67,6 @@ common project-config
     -Wpartial-fields
     -Wredundant-constraints
     -Wunused-packages
-
   if !flag(development)
       ghc-options: -Werror
 
@@ -110,6 +109,7 @@ library
     , contra-tracer
     , data-default
     , gitrev
+    , hydra-arch-plugin
     , io-sim-classes
     , iohk-monitoring
     , iproute
@@ -129,6 +129,7 @@ library
     , websockets
     , zeromq4-haskell
   ghc-options:
+    -fplugin=Hydra.Architecture.Plugin
     -haddock
 
 executable hydra-node

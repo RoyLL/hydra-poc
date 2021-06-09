@@ -75,6 +75,7 @@ library
   import: project-config
   hs-source-dirs: src
   exposed-modules:
+    Hydra.Architecture.Annotations
     Hydra.Architecture.Plugin
   build-depends:
       base
