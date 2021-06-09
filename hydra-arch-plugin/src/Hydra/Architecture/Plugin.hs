@@ -6,7 +6,6 @@ module Hydra.Architecture.Plugin (
 ) where
 
 import Control.Monad (unless)
-import Data.Data hiding (TyCon)
 import GHC.IO.IOMode (IOMode (AppendMode))
 import GhcPlugins hiding ((<>))
 import Hydra.Architecture.Annotations
@@ -32,21 +31,21 @@ pass g = do
   return g
  where
   printAnn :: DynFlags -> ModGuts -> Annotable -> CoreM ()
-  printAnn dflags guts (Binder (NonRec b _)) = do
-    anns <- annotationsOn guts (varUnique b) :: CoreM [Architecture]
-    unless (null anns) $
-      liftIO $ do
-        withFile "annotations" AppendMode $ \hdl -> do
-          hPutStrLn hdl $ "Annotated binding found: " ++ showSDoc dflags (ppr b)
-  printAnn dflags guts (TypeCtor tycon) = do
-    anns <- annotationsOn guts (getUnique tycon) :: CoreM [Architecture]
-    unless (null anns) $
-      liftIO $ do
-        withFile "annotations" AppendMode $ \hdl -> do
-          hPutStrLn hdl $ "Annotated binding found: " ++ showSDoc dflags (ppr tycon)
+  printAnn dflags guts (Binder (NonRec b _)) = annotationsOn dflags guts b
+  printAnn dflags guts (TypeCtor tycon) = annotationsOn dflags guts tycon
   printAnn _ _ _ = pure ()
 
-annotationsOn :: Data a => ModGuts -> Unique -> CoreM [a]
-annotationsOn guts bndr = do
-  anns <- getAnnotations deserializeWithData guts
-  return $ lookupWithDefaultUFM anns [] bndr
+annotationsOn ::
+  Uniquable b =>
+  Outputable b =>
+  DynFlags ->
+  ModGuts ->
+  b ->
+  CoreM ()
+annotationsOn dflags guts bndr = do
+  anns' <- getAnnotations deserializeWithData guts
+  let anns :: [Architecture] = lookupWithDefaultUFM anns' [] (getUnique bndr)
+  unless (null anns) $
+    liftIO $ do
+      withFile "annotations" AppendMode $ \hdl -> do
+        hPutStrLn hdl $ showSDoc dflags (ppr bndr) <> " : " <> show anns
