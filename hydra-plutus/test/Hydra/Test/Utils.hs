@@ -13,7 +13,7 @@ import Control.Monad.Freer.Writer (tell)
 import Data.Maybe (fromJust)
 import Data.Text.Prettyprint.Doc (Doc, (<+>))
 import Ledger.AddressMap (UtxoMap, fundsAt)
-import Plutus.Contract (Contract, HasEndpoint)
+import Plutus.Contract (Contract, ContractError (WalletError), HasEndpoint)
 import Plutus.Trace.Effects.RunContract (ContractConstraints, RunContract)
 import Plutus.Trace.Effects.Waiting (Waiting)
 import Plutus.Trace.Emulator.Types (ContractHandle, UserThreadMsg (..), walletInstanceTag)
@@ -30,6 +30,7 @@ import Plutus.Contract.Test (
   TracePredicate,
   Wallet (..),
   assertAccumState,
+  assertContractError,
   walletPubKey,
  )
 
@@ -97,6 +98,22 @@ assertFinalState contract wallet predicate =
     (walletInstanceTag wallet)
     (maybe False (predicate . last) . nonEmpty)
     "assert final state"
+
+assertContractFailed ::
+  (ContractConstraints schema, Monoid s) =>
+  Contract s schema ContractError a ->
+  Wallet ->
+  String ->
+  TracePredicate
+assertContractFailed contract wallet text =
+  assertContractError
+    contract
+    (walletInstanceTag wallet)
+    ( \case
+        WalletError{} -> True
+        _ -> False
+    )
+    (text <> " was expected to fail ")
 
 checkCompiledContractPIR :: FilePath -> CompiledCode a -> TestTree
 checkCompiledContractPIR path code =

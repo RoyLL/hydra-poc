@@ -19,13 +19,11 @@ import Ledger.AddressMap (UtxoMap)
 import Plutus.Contract (Contract)
 import Plutus.Contract.Test (
   Wallet (..),
-  assertContractError,
   assertNoFailedTransactions,
   checkPredicate,
   walletFundsChange,
   (.&&.),
  )
-import Plutus.Trace.Emulator.Types (walletInstanceTag)
 import PlutusTx.Monoid (inv)
 import Test.Tasty (TestTree, testGroup)
 import Wallet.Types (ContractError (..))
@@ -34,6 +32,7 @@ import qualified Control.Monad.Freer.Extras.Log as Trace
 import qualified Data.Map.Strict as Map
 import qualified Hydra.Contract.OffChain as OffChain
 import qualified Hydra.Contract.OnChain as OnChain
+import Hydra.Test.Utils (assertContractFailed)
 import qualified Plutus.Trace.Emulator as Trace
 import qualified Prelude
 
@@ -71,7 +70,7 @@ tests =
   testGroup
     "Hydra Scenarios"
     [ checkPredicate
-        "Init > Commit > Commit > CollectCom: Can CollectCom when all parties have submitted"
+        "Init > Commit > Commit > CollectCom > Close: Can Close an opened head"
         ( assertNoFailedTransactions
             .&&. assertFinalState contract alice stateIsOpen
             .&&. assertFinalState contract alice hasTwoTxOuts
@@ -122,14 +121,7 @@ tests =
         ( assertNoFailedTransactions
             .&&. assertFinalState contract alice stateIsInitial
             .&&. walletFundsChange alice (inv fixtureAmount)
-            .&&. assertContractError
-              contract
-              (walletInstanceTag alice)
-              ( \case
-                  WalletError{} -> True
-                  _ -> False
-              )
-              "expected collectCom to fail"
+            .&&. assertContractFailed contract alice "CollectCom"
         )
         $ do
           aliceH <- setupWallet alice
