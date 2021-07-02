@@ -292,9 +292,32 @@ close ::
   (AsContractError e) =>
   HeadParameters ->
   Contract [OnChain.State] Schema e ()
-close _ = do
-  (_headMember, _snapshot) <- endpoint @"close" @(PubKeyHash, OnChain.Snapshot)
-  error "close: TODO"
+close params = do
+  (headMember, snapshot) <- endpoint @"close" @(PubKeyHash, OnChain.Snapshot)
+  stateMachine <- utxoAt (Scripts.validatorAddress $ hydraTypedValidator params)
+  tx <-
+    submitTxConstraintsWith @OnChain.Hydra
+      (lookups stateMachine headMember)
+      (constraints snapshot stateMachine headMember)
+  awaitTxConfirmed (txId tx)
+  tell [OnChain.Closed snapshot]
+ where
+  lookups stateMachine headMember =
+    mempty
+      { slTypedValidator =
+          Just (hydraTypedValidator params)
+      , slTxOutputs = stateMachine
+      , slOwnPubkey = Just headMember
+      }
+
+  constraints snapshot stateMachine headMember =
+    mconcat
+      [ mustBeSignedBy headMember
+      , mustPayToTheScript (OnChain.Closed snapshot) (foldMap (txOutValue . txOutTxOut) stateMachine)
+      , foldMap
+          (`mustSpendScriptOutput` asRedeemer @(RedeemerType OnChain.Hydra) (OnChain.Close snapshot))
+          (Map.keys stateMachine)
+      ]
 
 -- | This endpoint allows for setting up a wallet for testing, that is, a wallet
 -- that has several UTxO, so that one can be locked and the other used to pay

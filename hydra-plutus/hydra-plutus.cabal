@@ -128,6 +128,7 @@ test-suite hydra-plutus-test
       plutus-contract,
       plutus-core,
       plutus-ledger,
+      plutus-pab,
       plutus-tx,
       plutus-tx-plugin,
       prettyprinter,

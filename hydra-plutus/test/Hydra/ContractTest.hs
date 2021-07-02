@@ -14,8 +14,9 @@ import Hydra.Test.Utils (
   utxoOf,
   vk,
  )
-import Ledger.Ada (lovelaceValueOf)
+import Ledger.Ada (adaSymbol, adaToken, lovelaceValueOf)
 import Ledger.AddressMap (UtxoMap)
+import Ledger.Value (valueOf)
 import Plutus.Contract (Contract)
 import Plutus.Contract.Test (
   Wallet (..),
@@ -24,6 +25,7 @@ import Plutus.Contract.Test (
   walletFundsChange,
   (.&&.),
  )
+import Plutus.PAB.Arbitrary ()
 import PlutusTx.Monoid (inv)
 import Test.Tasty (TestTree, testGroup)
 import Wallet.Types (ContractError (..))
@@ -34,6 +36,9 @@ import qualified Hydra.Contract.OffChain as OffChain
 import qualified Hydra.Contract.OnChain as OnChain
 import Hydra.Test.Utils (assertContractFailed)
 import qualified Plutus.Trace.Emulator as Trace
+import Test.QuickCheck (Gen, choose)
+import Test.QuickCheck.Gen (Gen (MkGen))
+import Test.QuickCheck.Random (mkQCGen)
 import qualified Prelude
 
 --
@@ -57,13 +62,27 @@ contract = OffChain.contract headParameters
  where
   headParameters = OffChain.mkHeadParameters [vk alice, vk bob] testPolicy
 
-anyTxOut1, anyTxOut2 :: TxOut
-anyTxOut1 = error "undefined"
-anyTxOut2 = error "undefined"
-
 --
 -- Helpers
 --
+
+-- | Generate value-preserving Utxo from seed and existing Utxo
+generateUtxo :: [TxOut] -> Gen [TxOut]
+generateUtxo initialUtxo =
+  go totalAmount
+ where
+  totalAmount = valueOf (foldMap txOutValue initialUtxo) adaSymbol adaToken
+
+  go :: Integer -> Gen [TxOut]
+  go 0 = pure []
+  go amount = do
+    addr <- arbitrary
+    val <- choose (1, amount)
+    let txOut = TxOut addr (lovelaceValueOf val) Nothing
+    (txOut :) <$> go (amount - val)
+
+generateWith :: Gen a -> Int -> a
+generateWith (MkGen run) seed = run (mkQCGen seed) 30
 
 --
 -- Test
@@ -102,7 +121,7 @@ tests =
 
           -- TODO generate arbitrary snapshots without inflight txs
           let snapshot = OnChain.Snapshot 1 utxo
-              utxo = [anyTxOut1, anyTxOut2]
+              utxo = generateWith (generateUtxo committedUtxo) 42
 
           callEndpoint @"close" bobH (vk bob, snapshot)
     , checkPredicate
