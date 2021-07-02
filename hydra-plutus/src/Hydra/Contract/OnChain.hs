@@ -61,6 +61,7 @@ PlutusTx.unstableMakeIsData ''Snapshot
 data State
   = Initial
   | Open [TxOut]
+  | Closed Snapshot
   | Final
   deriving stock (Generic, Show)
   deriving anyclass (FromJSON, ToJSON)
@@ -70,6 +71,7 @@ PlutusTx.unstableMakeIsData ''State
 
 data Transition
   = CollectCom
+  | Close Snapshot
   | Abort
   deriving (Generic)
 
@@ -101,6 +103,24 @@ hydraValidator HeadParameters{participants, policyId} s i ctx =
        in and
             [ mustBeSignedByOneOf participants ctx
             , all (mustForwardParty ctx policyId) participants
+            , checkScriptContext @(RedeemerType Hydra) @(DatumType Hydra)
+                (mustPayToTheScript newState amountPaid)
+                ctx
+            ]
+    (Open _, Close snapshot) ->
+      let newState =
+            Closed snapshot
+          amountPaid =
+            foldMap txOutValue (snd <$> filterInputs (hasParty policyId) ctx)
+          snapshotValue =
+            foldMap txOutValue (utxo snapshot)
+       in and
+            [ mustBeSignedByOneOf participants ctx
+            , -- TODO / QUESTION: When closing, shouldn't we ensure that the total
+              -- value captured by the snapshot is smaller or equal to the value
+              -- available at the contract. Checking the signatures isn't enough
+              -- as the head participants could be making a mistake?
+              snapshotValue == amountPaid
             , checkScriptContext @(RedeemerType Hydra) @(DatumType Hydra)
                 (mustPayToTheScript newState amountPaid)
                 ctx

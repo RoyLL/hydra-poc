@@ -232,11 +232,6 @@ collectCom params@HeadParameters{participants, policy, policyId} = do
           , mustPayToTheScript (OnChain.Open $ reverse storedOutputs) amount
           ]
 
-close ::
-  HeadParameters ->
-  Contract [OnChain.State] Schema e ()
-close = error "undefined"
-
 abort ::
   (AsContractError e) =>
   HeadParameters ->
@@ -292,6 +287,14 @@ abort params@HeadParameters{participants, policy, policyId} = do
           (`mustSpendScriptOutput` asRedeemer @(RedeemerType OnChain.Hydra) OnChain.Abort)
           (Map.keys stateMachine)
       ]
+
+close ::
+  (AsContractError e) =>
+  HeadParameters ->
+  Contract [OnChain.State] Schema e ()
+close _ = do
+  (_headMember, _snapshot) <- endpoint @"close" @(PubKeyHash, OnChain.Snapshot)
+  error "close: TODO"
 
 -- | This endpoint allows for setting up a wallet for testing, that is, a wallet
 -- that has several UTxO, so that one can be locked and the other used to pay

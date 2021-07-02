@@ -76,8 +76,7 @@ tests =
     [ checkPredicate
         "Init > Commit > Commit > CollectCom > Close: Can Close an opened head"
         ( assertNoFailedTransactions
-            .&&. assertFinalState contract alice stateIsOpen
-            .&&. assertFinalState contract alice hasTwoTxOuts
+            .&&. assertFinalState contract alice stateIsClosed
             .&&. walletFundsChange alice (inv fixtureAmount)
             .&&. walletFundsChange bob (inv fixtureAmount)
         )
@@ -154,6 +153,11 @@ stateIsInitial = \case
 stateIsOpen :: OnChain.State -> Bool
 stateIsOpen = \case
   OnChain.Open{} -> True
+  _ -> False
+
+stateIsClosed :: OnChain.State -> Bool
+stateIsClosed = \case
+  OnChain.Closed{} -> True
   _ -> False
 
 hasTwoTxOuts :: OnChain.State -> Bool
