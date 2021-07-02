@@ -292,7 +292,7 @@ close ::
   (AsContractError e) =>
   HeadParameters ->
   Contract [OnChain.State] Schema e ()
-close params = do
+close params@HeadParameters{policy, policyId} = do
   (headMember, snapshot) <- endpoint @"close" @(PubKeyHash, OnChain.Snapshot)
   stateMachine <- utxoAt (Scripts.validatorAddress $ hydraTypedValidator params)
   tx <-
@@ -304,10 +304,21 @@ close params = do
  where
   lookups stateMachine headMember =
     mempty
-      { slTypedValidator =
+      { slMPS =
+          Map.singleton policyId policy
+      , slTypedValidator =
           Just (hydraTypedValidator params)
-      , slTxOutputs = stateMachine
-      , slOwnPubkey = Just headMember
+      , slOtherScripts =
+          Map.fromList
+            [ (Scripts.validatorAddress script, Scripts.validatorScript script)
+            | SomeTypedValidator script <-
+                [ SomeTypedValidator $ hydraTypedValidator params
+                ]
+            ]
+      , slTxOutputs =
+          stateMachine
+      , slOwnPubkey =
+          Just headMember
       }
 
   constraints snapshot stateMachine headMember =

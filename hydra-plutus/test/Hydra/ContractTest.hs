@@ -123,7 +123,7 @@ tests =
           let snapshot = OnChain.Snapshot 1 utxo
               utxo = generateWith (generateUtxo committedUtxo) 42
 
-          callEndpoint @"close" bobH (vk bob, snapshot)
+          callEndpoint @"close" aliceH (vk alice, snapshot)
     , checkPredicate
         "Init > Abort: One can always abort before head is open"
         ( assertNoFailedTransactions

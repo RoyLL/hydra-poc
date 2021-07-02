@@ -120,6 +120,8 @@ hydraValidator HeadParameters{participants, policyId} s i ctx =
               -- value captured by the snapshot is smaller or equal to the value
               -- available at the contract. Checking the signatures isn't enough
               -- as the head participants could be making a mistake?
+
+              -- FIXME: snapshotValue does not contain participation tokens!
               snapshotValue == amountPaid
             , checkScriptContext @(RedeemerType Hydra) @(DatumType Hydra)
                 (mustPayToTheScript newState amountPaid)
