@@ -57,6 +57,10 @@ contract = OffChain.contract headParameters
  where
   headParameters = OffChain.mkHeadParameters [vk alice, vk bob] testPolicy
 
+anyTxOut1, anyTxOut2 :: TxOut
+anyTxOut1 = error "undefined"
+anyTxOut2 = error "undefined"
+
 --
 -- Helpers
 --
@@ -93,7 +97,15 @@ tests =
           let bobCommit = selectOne utxoBob
           callEndpoint @"commit" bobH (vk bob, bobCommit)
 
-          callEndpoint @"collectCom" aliceH (vk alice, txOutTxOut . snd <$> [aliceCommit, bobCommit])
+          let committedUtxo = txOutTxOut . snd <$> [aliceCommit, bobCommit]
+
+          callEndpoint @"collectCom" aliceH (vk alice, committedUtxo)
+
+          -- TODO generate arbitrary snapshots without inflight txs
+          let snapshot = OnChain.Snapshot 1 utxo
+              utxo = [anyTxOut1, anyTxOut2]
+
+          callEndpoint @"close" bobH (vk bob, snapshot)
     , checkPredicate
         "Init > Abort: One can always abort before head is open"
         ( assertNoFailedTransactions

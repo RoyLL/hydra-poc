@@ -232,6 +232,11 @@ collectCom params@HeadParameters{participants, policy, policyId} = do
           , mustPayToTheScript (OnChain.Open $ reverse storedOutputs) amount
           ]
 
+close ::
+  HeadParameters ->
+  Contract [OnChain.State] Schema e ()
+close = error "undefined"
+
 abort ::
   (AsContractError e) =>
   HeadParameters ->
@@ -310,6 +315,7 @@ type Schema =
     .\/ Endpoint "commit" (PubKeyHash, (TxOutRef, TxOutTx))
     .\/ Endpoint "collectCom" (PubKeyHash, [TxOut])
     .\/ Endpoint "abort" (PubKeyHash, [TxOut])
+    .\/ Endpoint "close" (PubKeyHash, OnChain.Snapshot)
 
 contract ::
   (AsContractError e) =>
@@ -323,6 +329,7 @@ contract params = forever endpoints
       `select` commit params
       `select` collectCom params
       `select` abort params
+      `select` close params
 
 --
 -- Helpers

@@ -44,6 +44,16 @@ data HeadParameters = HeadParameters
 
 PlutusTx.makeLift ''HeadParameters
 
+data Snapshot = Snapshot
+  { snapshotNumber :: Integer
+  , utxo :: [TxOut]
+  }
+  deriving stock (Generic, Show)
+  deriving anyclass (FromJSON, ToJSON)
+
+PlutusTx.makeLift ''Snapshot
+PlutusTx.unstableMakeIsData ''Snapshot
+
 --
 -- Hydra State-Machine
 --

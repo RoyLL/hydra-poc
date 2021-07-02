@@ -37,6 +37,7 @@ instance ContractModel HydraModel where
     = Init Wallet
     | Commit Wallet Ada.Ada
     | CollectCom Wallet
+    | OffChainTx Wallet Wallet
     | Close Wallet
     deriving (Eq, Show)
 
