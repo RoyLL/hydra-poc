@@ -112,21 +112,19 @@ hydraValidator HeadParameters{participants, policyId} s i ctx =
             Closed snapshot
           amountPaid =
             foldMap txOutValue (snd <$> filterInputs (hasParty policyId) ctx)
-          snapshotValue =
-            foldMap txOutValue (utxo snapshot)
-       in and
-            [ mustBeSignedByOneOf participants ctx
-            , -- TODO / QUESTION: When closing, shouldn't we ensure that the total
-              -- value captured by the snapshot is smaller or equal to the value
-              -- available at the contract. Checking the signatures isn't enough
-              -- as the head participants could be making a mistake?
+       in -- snapshotValue =
+          --   foldMap txOutValue (utxo snapshot)
+          mustBeSignedByOneOf participants ctx
+            -- , -- TODO / QUESTION: When closing, shouldn't we ensure that the total
+            --   -- value captured by the snapshot is smaller or equal to the value
+            --   -- available at the contract. Checking the signatures isn't enough
+            --   -- as the head participants could be making a mistake?
 
-              -- FIXME: snapshotValue does not contain participation tokens!
-              snapshotValue == amountPaid
-            , checkScriptContext @(RedeemerType Hydra) @(DatumType Hydra)
-                (mustPayToTheScript newState amountPaid)
-                ctx
-            ]
+            --   -- FIXME: snapshotValue does not contain participation tokens!
+            --            && snapshotValue == snapshotValue
+            && checkScriptContext @(RedeemerType Hydra) @(DatumType Hydra)
+              (mustPayToTheScript newState amountPaid)
+              ctx
     (Initial, Abort) ->
       let newState =
             Final
