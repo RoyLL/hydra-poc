@@ -9,7 +9,7 @@ import Ledger
 import PlutusTx.Prelude
 
 import Data.Aeson (FromJSON, ToJSON)
-import Ledger.Ada (lovelaceValueOf)
+import Ledger.Ada (fromValue, lovelaceValueOf)
 import Ledger.Constraints (checkScriptContext)
 import Ledger.Constraints.TxConstraints (
   mustBeSignedBy,
@@ -111,17 +111,18 @@ hydraValidator HeadParameters{participants, policyId} s i ctx =
       let newState =
             Closed snapshot
           amountPaid =
-            foldMap txOutValue (snd <$> filterInputs (hasParty policyId) ctx)
-       in -- snapshotValue =
-          --   foldMap txOutValue (utxo snapshot)
-          mustBeSignedByOneOf participants ctx
+            foldMap
+              (txOutValue . txInInfoResolved)
+              (txInfoInputs . scriptContextTxInfo $ ctx)
+          snapshotValue =
+            foldMap txOutValue (utxo snapshot)
+       in mustBeSignedByOneOf participants ctx
             -- , -- TODO / QUESTION: When closing, shouldn't we ensure that the total
             --   -- value captured by the snapshot is smaller or equal to the value
             --   -- available at the contract. Checking the signatures isn't enough
             --   -- as the head participants could be making a mistake?
 
-            --   -- FIXME: snapshotValue does not contain participation tokens!
-            --            && snapshotValue == snapshotValue
+            && fromValue snapshotValue == fromValue amountPaid
             && checkScriptContext @(RedeemerType Hydra) @(DatumType Hydra)
               (mustPayToTheScript newState amountPaid)
               ctx

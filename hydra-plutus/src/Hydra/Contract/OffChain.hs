@@ -295,12 +295,14 @@ close ::
 close params@HeadParameters{policy, policyId} = do
   (headMember, snapshot) <- endpoint @"close" @(PubKeyHash, OnChain.Snapshot)
   stateMachine <- utxoAt (Scripts.validatorAddress $ hydraTypedValidator params)
+  logInfo @Text ("State machine UTxO: " <> show stateMachine)
   -- NOTE: This contains ADA values and the participation tokens
   let contractAmount = foldMap (txOutValue . txOutTxOut) stateMachine
   tx <-
     submitTxConstraintsWith @OnChain.Hydra
       (lookups stateMachine headMember)
       (constraints snapshot stateMachine headMember contractAmount)
+  logInfo @Text ("Submitted Tx: " <> show tx)
   awaitTxConfirmed (txId tx)
   tell [OnChain.Closed snapshot]
  where

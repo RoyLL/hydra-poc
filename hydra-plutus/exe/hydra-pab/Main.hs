@@ -107,3 +107,6 @@ instance ToSchema TxOutRef where
 
 instance ToSchema TxOutTx where
   toSchema = FormSchemaUnsupported "TxOutTx"
+
+instance ToSchema OnChain.Snapshot where
+  toSchema = FormSchemaUnsupported "Snapshot"
