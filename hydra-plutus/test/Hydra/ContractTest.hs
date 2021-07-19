@@ -92,39 +92,38 @@ tests :: TestTree
 tests =
   testGroup
     "Hydra Scenarios"
-    [ expectFailure "To finish" $
-        checkPredicate
-          "Init > Commit > Commit > CollectCom > Close: Can Close an opened head"
-          ( assertNoFailedTransactions
-              .&&. assertFinalState contract alice stateIsClosed
-              .&&. walletFundsChange alice (inv fixtureAmount)
-              .&&. walletFundsChange bob (inv fixtureAmount)
-          )
-          $ do
-            aliceH <- setupWallet alice
-            bobH <- setupWallet bob
+    [ checkPredicate
+        "Init > Commit > Commit > CollectCom > Close: Can Close an opened head"
+        ( assertNoFailedTransactions
+            .&&. assertFinalState contract alice stateIsClosed
+            .&&. walletFundsChange alice (inv fixtureAmount)
+            .&&. walletFundsChange bob (inv fixtureAmount)
+        )
+        $ do
+          aliceH <- setupWallet alice
+          bobH <- setupWallet bob
 
-            callEndpoint @"init" aliceH ()
+          callEndpoint @"init" aliceH ()
 
-            utxoAlice <- utxoOf alice
-            Trace.logInfo ("Alice's UTxO: " <> prettyUtxo utxoAlice)
-            let aliceCommit = selectOne utxoAlice
-            callEndpoint @"commit" aliceH (vk alice, aliceCommit)
+          utxoAlice <- utxoOf alice
+          Trace.logInfo ("Alice's UTxO: " <> prettyUtxo utxoAlice)
+          let aliceCommit = selectOne utxoAlice
+          callEndpoint @"commit" aliceH (vk alice, aliceCommit)
 
-            utxoBob <- utxoOf bob
-            Trace.logInfo ("Bob's UTxO: " <> prettyUtxo utxoBob)
-            let bobCommit = selectOne utxoBob
-            callEndpoint @"commit" bobH (vk bob, bobCommit)
+          utxoBob <- utxoOf bob
+          Trace.logInfo ("Bob's UTxO: " <> prettyUtxo utxoBob)
+          let bobCommit = selectOne utxoBob
+          callEndpoint @"commit" bobH (vk bob, bobCommit)
 
-            let committedUtxo = txOutTxOut . snd <$> [aliceCommit, bobCommit]
+          let committedUtxo = txOutTxOut . snd <$> [aliceCommit, bobCommit]
 
-            callEndpoint @"collectCom" aliceH (vk alice, committedUtxo)
+          callEndpoint @"collectCom" aliceH (vk alice, committedUtxo)
 
-            -- TODO generate arbitrary snapshots without inflight txs
-            let snapshot = OnChain.Snapshot 1 utxo
-                utxo = generateWith (generateUtxo committedUtxo) 42
+          -- TODO generate arbitrary snapshots without inflight txs
+          let snapshot = OnChain.Snapshot 1 utxo
+              utxo = generateWith (generateUtxo committedUtxo) 42
 
-            callEndpoint @"close" aliceH (vk alice, snapshot)
+          callEndpoint @"close" aliceH (vk alice, snapshot)
     , checkPredicate
         "Init > Abort: One can always abort before head is open"
         ( assertNoFailedTransactions
