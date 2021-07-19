@@ -61,8 +61,8 @@ PlutusTx.unstableMakeIsData ''Snapshot
 data State
   = Initial
   | Open [TxOut]
-  | Closed Snapshot
   | Final
+  | Closed Snapshot
   deriving stock (Generic, Show)
   deriving anyclass (FromJSON, ToJSON)
 
@@ -71,8 +71,8 @@ PlutusTx.unstableMakeIsData ''State
 
 data Transition
   = CollectCom
-  | Close Snapshot
   | Abort
+  | Close Snapshot
   deriving (Generic)
 
 PlutusTx.makeLift ''Transition
