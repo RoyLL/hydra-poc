@@ -51,11 +51,11 @@ alice = Wallet 1
 bob :: Wallet
 bob = Wallet 2
 
-testPolicy :: MonetaryPolicy
-testPolicy = OnChain.hydraMonetaryPolicy 42
+testPolicy :: MintingPolicy
+testPolicy = OnChain.hydraMintingPolicy 42
 
-testPolicyId :: MonetaryPolicyHash
-testPolicyId = monetaryPolicyHash testPolicy
+testPolicyId :: MintingPolicyHash
+testPolicyId = mintingPolicyHash testPolicy
 
 contract :: Contract [OnChain.State] OffChain.Schema ContractError ()
 contract = OffChain.contract headParameters
@@ -148,8 +148,7 @@ tests =
           callEndpoint @"abort" aliceH (vk alice, [txOutTxOut $ snd utxoAlice])
     , checkPredicate
         "Init > Commit > CollectCom: CollectCom is not allowed when not all parties have committed"
-        ( assertNoFailedTransactions
-            .&&. assertFinalState contract alice stateIsInitial
+        ( assertFinalState contract alice stateIsInitial
             .&&. walletFundsChange alice (inv fixtureAmount)
             .&&. assertContractFailed contract alice "CollectCom"
         )

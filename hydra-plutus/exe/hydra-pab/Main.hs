@@ -8,12 +8,13 @@ import Cardano.Prelude hiding (log)
 import Control.Monad.Freer (Eff, Member, interpret, type (~>))
 import Control.Monad.Freer.Error (Error)
 import Control.Monad.Freer.Extras.Log (LogMsg)
+import Data.Default (def)
 import qualified Hydra.Contract.OnChain as OnChain
 import Hydra.Contract.PAB (PABContract (..))
 import qualified Hydra.ContractSM as ContractSM
-import Ledger (MonetaryPolicy, MonetaryPolicyHash, PubKeyHash, TxOut, TxOutRef, TxOutTx, monetaryPolicyHash, pubKeyAddress, pubKeyHash)
+import Ledger (MintingPolicy, MintingPolicyHash, PubKeyHash, TxOut, TxOutRef, TxOutTx, mintingPolicyHash, pubKeyAddress, pubKeyHash)
 import Ledger.AddressMap (UtxoMap)
-import Plutus.Contract (BlockchainActions, Contract, ContractError, Empty, logInfo, ownPubKey, tell, utxoAt, waitNSlots)
+import Plutus.Contract (Contract, ContractError, Empty, logInfo, ownPubKey, tell, utxoAt, waitNSlots)
 import Plutus.Contract.Test (walletPubKey)
 import Plutus.PAB.Effects.Contract (ContractEffect (..))
 import Plutus.PAB.Effects.Contract.Builtin (Builtin, SomeBuiltin (..), endpointsToSchemas)
@@ -45,7 +46,7 @@ main = void $
 
 handlers :: SimulatorEffectHandlers (Builtin PABContract)
 handlers =
-  Simulator.mkSimulatorHandlers @(Builtin PABContract) [] $
+  Simulator.mkSimulatorHandlers @(Builtin PABContract) def [] $
     interpret handleStarterContract
 
 handleStarterContract ::
@@ -68,7 +69,7 @@ handleStarterContract = Builtin.handleBuiltin getSchema getContract
     GetUtxos -> SomeBuiltin getUtxo
     WatchInit -> SomeBuiltin ContractSM.watchInit
 
-getUtxo :: Contract (Last UtxoMap) BlockchainActions ContractError ()
+getUtxo :: Contract (Last UtxoMap) Empty ContractError ()
 getUtxo = do
   logInfo @Text $ "getUtxo: Starting to get and report utxo map every slot"
   address <- pubKeyAddress <$> ownPubKey
@@ -80,11 +81,11 @@ getUtxo = do
     void $ waitNSlots 1
     loop address
 
-testPolicy :: MonetaryPolicy
-testPolicy = OnChain.hydraMonetaryPolicy 42
+testPolicy :: MintingPolicy
+testPolicy = OnChain.hydraMintingPolicy 42
 
-testPolicyId :: MonetaryPolicyHash
-testPolicyId = monetaryPolicyHash testPolicy
+testPolicyId :: MintingPolicyHash
+testPolicyId = mintingPolicyHash testPolicy
 
 vk :: Wallet -> PubKeyHash
 vk = pubKeyHash . walletPubKey

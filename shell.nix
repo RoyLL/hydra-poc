@@ -2,15 +2,9 @@
 # environment. This is now based on haskell.nix and it's haskell-nix.project
 # (see 'default.nix').
 { compiler ? "ghc8104"
-  # Latest haskell.nix for more likely cache hits
-, haskellNix ? import
-    (builtins.fetchTarball
-      "https://github.com/input-output-hk/haskell.nix/archive/87084d65a476cc826a0e8c5d281d494254f5bc7a.tar.gz")
-    { }
-  # Use same pkgs as haskell.nix for more likely cache hits
-, nixpkgsSrc ? haskellNix.sources.nixpkgs-2009
-, nixpkgsArgs ? haskellNix.nixpkgsArgs
-, pkgs ? import nixpkgsSrc nixpkgsArgs
+  # nixpkgs 21.05 at 2021-07-19
+, pkgs ? import (builtins.fetchTarball "https://github.com/NixOS/nixpkgs/archive/4181644d09b96af0f92c2f025d3463f9d19c7790.tar.gz") { }
+
   # Use cardano-node master for more likely cache hits
 , cardanoNodePkgs ? import
     (builtins.fetchTarball
@@ -51,6 +45,9 @@ let
     # Used in local-cluster
     cardanoNodePkgs.cardano-node
     cardanoNodePkgs.cardano-cli
+    # For validating JSON instances against a pre-defined schema
+    pkgs.python3Packages.jsonschema
+    pkgs.yq
   ];
 
   haskellNixShell = hsPkgs.shellFor {
@@ -82,6 +79,7 @@ let
       pkgs.haskell.compiler.${compiler}
       pkgs.cabal-install
       pkgs.git
+      pkgs.pkgconfig
     ];
 
     # Ensure that libz.so and other libraries are available to TH splices.

@@ -1,4 +1,4 @@
-index-state: 2021-06-02T00:00:00Z
+index-state: 2021-07-07T00:00:00Z
 
 packages:
   local-cluster
@@ -9,6 +9,7 @@ packages:
 tests: False
 package local-cluster
   tests: True
+  benchmarks: True
 
 package hydra-node
   tests: True
@@ -19,11 +20,25 @@ package hydra-plutus
 -- Always show detailed output for tests
 test-show-details: direct
 
-allow-newer:
-  -- 'iohk-monitoring' -> 'ekg' -> 'snap-server' which has a < 0.14 upper bound for attoparsec
-  snap-server:attoparsec
+-- This is the incantation which seems to be pleasing the cabal gods, given the
+-- current 'index-state' and versions of 'plutus' and 'cardano-node'. Possible
+-- explanation why this is necessary: we need a more recent 'index-state'
+-- (because of plutus) than cardano-node et al and some of their dependencies do
+-- not have behave well.
+constraints:
+  attoparsec == 0.13.2.5,
+  cryptonite == 0.27,
+  dlist == 0.8.0.8,
+  dns == 3.0.4,
+  semialign == 1.1.0.1,
+  lens == 4.19.2,
+  dependent-sum == 0.7.1.0,
+  recursion-schemes == 5.1.3
 
--- NOTE: The following is taken from plutus-starter / plutus from 2021-06-11
+allow-newer:
+  some
+
+-- NOTE: The following is taken from plutus master at 2021-07-19
 
 source-repository-package
   type: git
@@ -31,6 +46,7 @@ source-repository-package
   subdir:
     freer-extras
     playground-common
+    plutus-chain-index
     plutus-core
     plutus-contract
     plutus-ledger
@@ -42,7 +58,8 @@ source-repository-package
     prettyprinter-configurable
     quickcheck-dynamic
     word-array
-  tag: 5e20b2df3ac55b55b9d70eb7271b295ac797ed5e
+  tag: e3e220f5434d5cc01d613e656dc661acbadd55a5
+  --sha256: 12268e6c6b5fe34499a1a9ad2bbba6547a00edd231aa810de40ab36a2cd91e42
 
 -- The following sections are copied from the 'plutus' repository cabal.project at the revision
 -- given above.
@@ -58,21 +75,21 @@ package eventful-sql-common
   ghc-options: -XDerivingStrategies -XStandaloneDeriving -XUndecidableInstances -XDataKinds -XFlexibleInstances -XMultiParamTypeClasses
 
 allow-newer:
-  -- Has a commit to allow newer aeson, not on Hackage yet
-  monoidal-containers:aeson
   -- Pins to an old version of Template Haskell, unclear if/when it will be updated
-  , size-based:template-haskell
+  size-based:template-haskell
 
   -- The following three dependencies are needed by plutus.
   , eventful-sql-common:persistent
   , eventful-sql-common:persistent-template
   , ouroboros-consensus-byron:formatting
+  , beam-core:aeson
+  , beam-sqlite:aeson
+  , beam-sqlite:dlist
+  , beam-migrate:aeson
 
 constraints:
-  -- aws-lambda-haskell-runtime-wai doesn't compile with newer versions
-  aws-lambda-haskell-runtime <= 3.0.3
   -- big breaking change here, inline-r doens't have an upper bound
-  , singletons < 3.0
+  singletons < 3.0
   -- breaks eventful even more than it already was
   , persistent-template < 2.12
 
@@ -81,27 +98,32 @@ source-repository-package
   type: git
   location: https://github.com/Quid2/flat.git
   tag: 95e5d7488451e43062ca84d5376b3adcc465f1cd
+  --sha256: 06l31x3y93rjpryvlxnpsyq2zyxvb0z6lik6yq2fvh36i5zwvwa3
 
 -- Needs some patches, but upstream seems to be fairly dead (no activity in > 1 year)
 source-repository-package
   type: git
   location: https://github.com/shmish111/purescript-bridge.git
   tag: 6a92d7853ea514be8b70bab5e72077bf5a510596
+  --sha256: 13j64vv116in3c204qsl1v0ajphac9fqvsjp7x3zzfr7n7g61drb
 
 source-repository-package
   type: git
   location: https://github.com/shmish111/servant-purescript.git
   tag: a76104490499aa72d40c2790d10e9383e0dbde63
+  --sha256: 11nxxmi5bw66va7psvrgrw7b7n85fvqgfp58yva99w3v9q3a50v9
 
 source-repository-package
   type: git
   location: https://github.com/input-output-hk/cardano-crypto.git
   tag: ce8f1934e4b6252084710975bd9bbc0a4648ece4
+  --sha256: 1v2laq04piyj511b2m77hxjh9l1yd6k9kc7g6bjala4w3zdwa4ni
 
 source-repository-package
   type: git
   location: https://github.com/input-output-hk/cardano-base
   tag: a715c7f420770b70bbe95ca51d3dec83866cb1bd
+  --sha256: 06l06mmb8cd4q37bnvfpgx1c5zgsl4xaf106dqva98738i8asj7j
   subdir:
     binary
     binary/test
@@ -115,6 +137,7 @@ source-repository-package
   type: git
   location: https://github.com/input-output-hk/cardano-prelude
   tag: fd773f7a58412131512b9f694ab95653ac430852
+  --sha256: 02jddik1yw0222wd6q0vv10f7y8rdgrlqaiy83ph002f9kjx7mh6
   subdir:
     cardano-prelude
     cardano-prelude-test
@@ -122,8 +145,10 @@ source-repository-package
 source-repository-package
   type: git
   location: https://github.com/input-output-hk/ouroboros-network
-  tag: e50613562d6d4a0f933741fcf590b0f69a1eda67
+  tag: e338f2cf8e1078fbda9555dd2b169c6737ef6774
+  --sha256: 0dabe7a4de732a47b3a09d56bb4e57263f2ef8329f2af7d5bc4c702f2f0ca88b
   subdir:
+    monoidal-synchronisation
     typed-protocols
     typed-protocols-examples
     ouroboros-network
@@ -134,13 +159,14 @@ source-repository-package
     ouroboros-consensus-cardano
     ouroboros-consensus-shelley
     io-sim
-    io-sim-classes
+    io-classes
     network-mux
 
 source-repository-package
   type: git
   location: https://github.com/input-output-hk/iohk-monitoring-framework
   tag: 34abfb7f4f5610cabb45396e0496472446a0b2ca
+  --sha256: 1fdc0a02ipa385dnwa6r6jyc8jlg537i12hflfglkhjs2b7i92gs
   subdir:
     iohk-monitoring
     tracer-transformers
@@ -153,7 +179,8 @@ source-repository-package
 source-repository-package
   type: git
   location: https://github.com/input-output-hk/cardano-ledger-specs
-  tag: a3ef848542961079b7cd53d599e5385198a3035c
+  tag: 6b0fca7a73c317f3af7c14dd4dc38178cc78a6c8
+  --sha256: 99beac3d43014f0c018a4992ee30ce09206009d4f60c053f701c3135c479e014
   subdir:
     byron/chain/executable-spec
     byron/crypto
@@ -177,21 +204,25 @@ source-repository-package
 source-repository-package
   type: git
   location: https://github.com/input-output-hk/cardano-node.git
-  tag: b3cabae6b3bf30a0b1b4e78bc4b67282dabad0a6
+  tag: f3ef4ed72894499160f2330b91572a159005c148
+  --sha256: 783bd008c54cab411ef676c8f07f994b9ead35edf9c957491992e03a0d8ce8d6
   subdir:
     cardano-api
-    cardano-config
     cardano-node
+    cardano-cli
+    cardano-config
 
 source-repository-package
   type: git
   location: https://github.com/input-output-hk/Win32-network
-  tag: 94153b676617f8f33abe8d8182c37377d2784bd1
+  tag: 5b3d08c454f425da5cf045fe7865950d7c806691
+  --sha256: 9cdd6dd7da71e840ec46fe339557a113c050692844aad5964a3052ac168cfe5a
 
 source-repository-package
   type: git
   location: https://github.com/input-output-hk/hedgehog-extras
   tag: 8bcd3c9dc22cc44f9fcfe161f4638a384fc7a187
+  --sha256: 12viwpahjdfvlqpnzdgjp40nw31rvyznnab1hml9afpaxd6ixh70
 
 -- The following two dependencies are not mirrored in the
 -- stack.yaml file, but they are needed regardless by cabal.
@@ -199,3 +230,4 @@ source-repository-package
   type: git
   location: https://github.com/input-output-hk/goblins
   tag: cde90a2b27f79187ca8310b6549331e59595e7ba
+  --sha256: 17c88rbva3iw82yg9srlxjv2ia5wjb9cyqw44hik565f5v9svnyg

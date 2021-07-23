@@ -25,7 +25,7 @@
       detailLevel = "FullDetails";
       licenseFiles = [ "LICENSE" "NOTICE" ];
       dataDir = ".";
-      dataFiles = [];
+      dataFiles = [ "api.yaml" ];
       extraSrcFiles = [ "README.md" ];
       extraTmpFiles = [];
       extraDocFiles = [];
@@ -51,7 +51,7 @@
           (hsPkgs."gitrev" or (errorHandler.buildDepError "gitrev"))
           (hsPkgs."hydra-prelude" or (errorHandler.buildDepError "hydra-prelude"))
           (hsPkgs."hydra-plutus" or (errorHandler.buildDepError "hydra-plutus"))
-          (hsPkgs."io-sim-classes" or (errorHandler.buildDepError "io-sim-classes"))
+          (hsPkgs."io-classes" or (errorHandler.buildDepError "io-classes"))
           (hsPkgs."iohk-monitoring" or (errorHandler.buildDepError "iohk-monitoring"))
           (hsPkgs."iproute" or (errorHandler.buildDepError "iproute"))
           (hsPkgs."network" or (errorHandler.buildDepError "network"))
@@ -63,6 +63,7 @@
           (hsPkgs."plutus-ledger" or (errorHandler.buildDepError "plutus-ledger"))
           (hsPkgs."plutus-pab" or (errorHandler.buildDepError "plutus-pab"))
           (hsPkgs."prometheus" or (errorHandler.buildDepError "prometheus"))
+          (hsPkgs."QuickCheck" or (errorHandler.buildDepError "QuickCheck"))
           (hsPkgs."req" or (errorHandler.buildDepError "req"))
           (hsPkgs."shelley-spec-ledger" or (errorHandler.buildDepError "shelley-spec-ledger"))
           (hsPkgs."shelley-spec-ledger-test" or (errorHandler.buildDepError "shelley-spec-ledger-test"))
@@ -140,6 +141,7 @@
             (hsPkgs."cborg" or (errorHandler.buildDepError "cborg"))
             (hsPkgs."containers" or (errorHandler.buildDepError "containers"))
             (hsPkgs."contra-tracer" or (errorHandler.buildDepError "contra-tracer"))
+            (hsPkgs."filepath" or (errorHandler.buildDepError "filepath"))
             (hsPkgs."hspec" or (errorHandler.buildDepError "hspec"))
             (hsPkgs."hspec-core" or (errorHandler.buildDepError "hspec-core"))
             (hsPkgs."hspec-junit-formatter" or (errorHandler.buildDepError "hspec-junit-formatter"))
@@ -147,14 +149,18 @@
             (hsPkgs."hydra-node" or (errorHandler.buildDepError "hydra-node"))
             (hsPkgs."hydra-prelude" or (errorHandler.buildDepError "hydra-prelude"))
             (hsPkgs."io-sim" or (errorHandler.buildDepError "io-sim"))
-            (hsPkgs."io-sim-classes" or (errorHandler.buildDepError "io-sim-classes"))
+            (hsPkgs."io-classes" or (errorHandler.buildDepError "io-classes"))
             (hsPkgs."iproute" or (errorHandler.buildDepError "iproute"))
+            (hsPkgs."lens" or (errorHandler.buildDepError "lens"))
+            (hsPkgs."lens-aeson" or (errorHandler.buildDepError "lens-aeson"))
             (hsPkgs."network" or (errorHandler.buildDepError "network"))
             (hsPkgs."process" or (errorHandler.buildDepError "process"))
             (hsPkgs."quickcheck-instances" or (errorHandler.buildDepError "quickcheck-instances"))
             (hsPkgs."req" or (errorHandler.buildDepError "req"))
+            (hsPkgs."temporary" or (errorHandler.buildDepError "temporary"))
             (hsPkgs."text" or (errorHandler.buildDepError "text"))
             (hsPkgs."typed-protocols-examples" or (errorHandler.buildDepError "typed-protocols-examples"))
+            (hsPkgs."yaml" or (errorHandler.buildDepError "yaml"))
             (hsPkgs."websockets" or (errorHandler.buildDepError "websockets"))
             (hsPkgs."QuickCheck" or (errorHandler.buildDepError "QuickCheck"))
             ];
@@ -164,6 +170,8 @@
             ];
           buildable = true;
           modules = [
+            "Paths_hydra_node"
+            "Hydra/APISpec"
             "Hydra/API/ServerSpec"
             "Hydra/Chain/ExternalPABSpec"
             "Hydra/Chain/ZeroMQSpec"
@@ -171,7 +179,6 @@
             "Hydra/BehaviorSpec"
             "Hydra/HeadLogicSpec"
             "Hydra/LedgerSpec"
-            "Hydra/Ledger/Builder"
             "Hydra/Ledger/SimpleSpec"
             "Hydra/Logging/MonitoringSpec"
             "Hydra/NetworkSpec"

@@ -10,6 +10,7 @@
 module Hydra.Ledger.Simple where
 
 import Hydra.Prelude
+import Test.QuickCheck (Gen, choose, sublistOf, getSize)
 
 import Data.Aeson (
   object,
@@ -17,6 +18,7 @@ import Data.Aeson (
   (.:),
   (.=),
  )
+import Data.List (maximum)
 import qualified Data.Set as Set
 import Hydra.Ledger
 
@@ -88,3 +90,39 @@ simpleLedger =
             else Left ValidationError
     , initUTxO = mempty
     }
+
+-- * Builders
+
+utxoRef :: Integer -> UTxO SimpleTx
+utxoRef = Set.singleton . TxIn
+
+utxoRefs :: [Integer] -> UTxO SimpleTx
+utxoRefs = Set.fromList . fmap TxIn
+
+aValidTx :: Integer -> SimpleTx
+aValidTx n = SimpleTx n mempty (utxoRef n)
+
+-- * Generators
+
+listOfCommittedUtxos :: Integer -> Gen [UTxO SimpleTx]
+listOfCommittedUtxos numCommits =
+  pure $ Set.singleton . TxIn <$> [1 .. numCommits]
+
+genSequenceOfValidTransactions :: UTxO SimpleTx -> Gen [SimpleTx]
+genSequenceOfValidTransactions initialUtxo = do
+  n <- fromIntegral <$> getSize
+  let maxId = if Set.null initialUtxo then 0 else unTxIn (maximum initialUtxo)
+  numTxs <- choose (1, n)
+  foldlM newTx (maxId, initialUtxo, mempty) [1 .. numTxs] >>= \(_, _, txs) -> pure (reverse txs)
+ where
+  newTx :: (Integer, UTxO SimpleTx, [SimpleTx]) -> Integer -> Gen (Integer, UTxO SimpleTx, [SimpleTx])
+  newTx (maxId, utxo, txs) txid = do
+    (newMax, ins, outs) <- genInputsAndOutputs maxId utxo
+    pure (newMax, (utxo Set.\\ ins) `Set.union` outs, SimpleTx txid ins outs : txs)
+
+  genInputsAndOutputs :: Integer -> Set TxIn -> Gen (Integer, Set TxIn, Set TxIn)
+  genInputsAndOutputs maxId utxo = do
+    ins <- sublistOf (Set.toList utxo)
+    numOuts <- choose (1, 10)
+    let outs = fmap (+ maxId) [1 .. numOuts]
+    pure (maximum outs, Set.fromList ins, Set.fromList $ fmap TxIn outs)

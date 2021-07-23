@@ -16,6 +16,11 @@ source-repository head
   type: git
   location: https://github.com/input-output-hk/hydra-node
 
+flag development
+     description: Disable -Werror for development
+     default: False
+     manual: True
+
 common project-config
   default-language: Haskell2010
   default-extensions:
@@ -54,7 +59,6 @@ common project-config
     TypeSynonymInstances
     ViewPatterns
   ghc-options:
-    -Werror
     -Wall
     -Wcompat
     -Widentities
@@ -62,6 +66,9 @@ common project-config
     -Wincomplete-uni-patterns
     -Wpartial-fields
     -Wredundant-constraints
+
+  if !flag(development)
+      ghc-options: -Werror
 
 library
   import: project-config
@@ -83,7 +90,7 @@ library
     , http-conduit
     , hydra-prelude
     , hydra-node
-    , io-sim-classes
+    , io-classes
     , iohk-monitoring
     , network
     , process
@@ -138,6 +145,34 @@ test-suite integration
     , temporary
   build-tool-depends:
     hspec-discover:hspec-discover, hydra-node:hydra-node, hydra-node:mock-chain
+  ghc-options:
+    -threaded
+    -rtsopts
+
+benchmark bench-e2e
+  import: project-config
+  hs-source-dirs: bench
+  main-is: Main.hs
+  type: exitcode-stdio-1.0
+  other-modules:
+    Bench.EndToEnd
+  build-depends:
+      base >=4.7 && <5
+    , aeson
+    , bytestring
+    , cardano-crypto-class
+    , containers
+    , hydra-node
+    , hydra-prelude
+    , io-classes
+    , lens
+    , lens-aeson
+    , local-cluster
+    , scientific
+    , time
+    , QuickCheck
+  build-tool-depends:
+    hydra-node:hydra-node, hydra-node:mock-chain
   ghc-options:
     -threaded
     -rtsopts

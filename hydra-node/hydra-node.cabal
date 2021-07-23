@@ -10,7 +10,11 @@ license-files:
   LICENSE
   NOTICE
 build-type:         Simple
-extra-source-files: README.md
+
+extra-source-files:
+  README.md
+data-files:
+  api.yaml
 
 source-repository head
   type: git
@@ -120,7 +124,7 @@ library
     , gitrev
     , hydra-prelude
     , hydra-plutus
-    , io-sim-classes
+    , io-classes
     , iohk-monitoring
     , iproute
     , network
@@ -132,6 +136,7 @@ library
     , plutus-ledger
     , plutus-pab
     , prometheus
+    , QuickCheck
     , req
     , shelley-spec-ledger
     , shelley-spec-ledger-test
@@ -175,6 +180,8 @@ test-suite tests
   import: project-config
   hs-source-dirs: test
   other-modules:
+    Paths_hydra_node
+    Hydra.APISpec
     Hydra.API.ServerSpec
     Hydra.Chain.ExternalPABSpec
     Hydra.Chain.ZeroMQSpec
@@ -182,7 +189,6 @@ test-suite tests
     Hydra.BehaviorSpec
     Hydra.HeadLogicSpec
     Hydra.LedgerSpec
-    Hydra.Ledger.Builder
     Hydra.Ledger.SimpleSpec
     Hydra.Logging.MonitoringSpec
     Hydra.NetworkSpec
@@ -200,6 +206,7 @@ test-suite tests
     , cborg
     , containers
     , contra-tracer
+    , filepath
     , hspec
     , hspec-core
     , hspec-junit-formatter
@@ -207,14 +214,18 @@ test-suite tests
     , hydra-node
     , hydra-prelude
     , io-sim
-    , io-sim-classes
+    , io-classes
     , iproute
+    , lens
+    , lens-aeson
     , network
     , process
     , quickcheck-instances
     , req
+    , temporary
     , text
     , typed-protocols-examples
+    , yaml
     , websockets
     , HUnit
     , QuickCheck

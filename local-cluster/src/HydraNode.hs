@@ -3,12 +3,13 @@
 {-# OPTIONS_GHC -Wno-incomplete-uni-patterns #-}
 
 module HydraNode (
-  HydraNode (..),
+  HydraClient (..),
   withHydraNode,
   failAfter,
   send,
   input,
   waitFor,
+  waitMatch,
   output,
   getMetrics,
   queryNode,
@@ -30,6 +31,7 @@ import Control.Concurrent.Async (
   forConcurrently_,
  )
 import Control.Exception (IOException)
+import Control.Monad.Class.MonadSTM (modifyTVar', newTVarIO, readTVarIO)
 import Data.Aeson (Value (String), object, (.=))
 import qualified Data.Aeson as Aeson
 import Data.Aeson.Types (Pair)
@@ -58,7 +60,7 @@ import System.Process (
 import System.Timeout (timeout)
 import Test.Hspec.Expectations (expectationFailure)
 
-data HydraNode = HydraNode
+data HydraClient = HydraClient
   { hydraNodeId :: Int
   , connection :: Connection
   , nodeStdout :: Handle
@@ -74,8 +76,8 @@ failAfter seconds action =
 input :: Text -> [Pair] -> Value
 input tag pairs = object $ ("input" .= tag) : pairs
 
-send :: HydraNode -> Value -> IO ()
-send HydraNode{hydraNodeId, connection, nodeStdout} v = do
+send :: HydraClient -> Value -> IO ()
+send HydraClient{hydraNodeId, connection, nodeStdout} v = do
   hPutStrLn nodeStdout ("Tester sending to " <> show hydraNodeId <> ": " <> show v)
   sendTextData connection (Aeson.encode v)
 
@@ -86,15 +88,33 @@ output tag pairs = object $ ("output" .= tag) : pairs
 -- | Wait some time for a single output from each of given nodes.
 -- This function waits for @delay@ seconds for message @expected@  to be seen by all
 -- given @nodes@.
-waitFor :: HasCallStack => Natural -> [HydraNode] -> Value -> IO ()
+waitFor :: HasCallStack => Natural -> [HydraClient] -> Value -> IO ()
 waitFor delay nodes v = waitForAll delay nodes [v]
+
+waitMatch :: HasCallStack => Natural -> HydraClient -> (Value -> Maybe a) -> IO a
+waitMatch delay HydraClient{connection} match = do
+  seenMsgs <- newTVarIO []
+  timeout (fromIntegral delay * 1_000_000) (go seenMsgs) >>= \case
+    Just x -> pure x
+    Nothing -> do
+      msgs <- readTVarIO seenMsgs
+      expectationFailure $ "Didn't match within allocated time, received messages: " <> show msgs
+      error "should never get there"
+ where
+  go seenMsgs = do
+    bytes <- receiveData connection
+    case Aeson.decode' bytes of
+      Nothing -> go seenMsgs
+      Just msg -> do
+        atomically (modifyTVar' seenMsgs (msg :))
+        maybe (go seenMsgs) pure (match msg)
 
 -- | Wait some time for a list of outputs from each of given nodes.
 -- This function is the generalised version of 'waitFor', allowing several messages
 -- to be waited for and received in /any order/.
-waitForAll :: HasCallStack => Natural -> [HydraNode] -> [Value] -> IO ()
+waitForAll :: HasCallStack => Natural -> [HydraClient] -> [Value] -> IO ()
 waitForAll delay nodes expected = do
-  forConcurrently_ nodes $ \HydraNode{hydraNodeId, connection} -> do
+  forConcurrently_ nodes $ \HydraClient{hydraNodeId, connection} -> do
     msgs <- newIORef []
     -- The chain is slow...
     result <- timeout (fromIntegral delay * 1_000_000) $ tryNext msgs expected connection
@@ -126,8 +146,8 @@ waitForAll delay nodes expected = do
     modifyIORef' msgs (msg :)
     tryNext msgs (delete msg stillExpected) c
 
-getMetrics :: HasCallStack => HydraNode -> IO ByteString
-getMetrics HydraNode{hydraNodeId} = do
+getMetrics :: HasCallStack => HydraClient -> IO ByteString
+getMetrics HydraClient{hydraNodeId} = do
   response <-
     failAfter 3 $ queryNode hydraNodeId
   when (getResponseStatusCode response /= 200) $ expectationFailure ("Request for Hydra-node metrics failed :" <> show (getResponseBody response))
@@ -144,7 +164,7 @@ queryNode nodeId =
     (HttpExceptionRequest _ (ConnectionFailure _)) -> threadDelay 100_000 >> cont
     e -> throwIO e
 
-withHydraNode :: forall alg. DSIGNAlgorithm alg => (Int, Int, Int) -> Int -> SignKeyDSIGN alg -> [VerKeyDSIGN alg] -> (HydraNode -> IO ()) -> IO ()
+withHydraNode :: forall alg. DSIGNAlgorithm alg => (Int, Int, Int) -> Int -> SignKeyDSIGN alg -> [VerKeyDSIGN alg] -> (HydraClient -> IO ()) -> IO ()
 withHydraNode mockChainPorts hydraNodeId sKey vKeys action = do
   withSystemTempFile "hydra-node" $ \f out -> traceOnFailure f $ do
     out' <- hDuplicate out
@@ -161,19 +181,28 @@ withHydraNode mockChainPorts hydraNodeId sKey vKeys action = do
               }
       withCreateProcess p $
         \_stdin _stdout _stderr processHandle -> do
-          race_ (checkProcessHasNotDied processHandle) (tryConnect out')
+          race_ (checkProcessHasNotDied processHandle) (startConnect out')
  where
-  tryConnect out = doConnect out `catch` \(_ :: IOException) -> tryConnect out
+  startConnect out = do
+    connectedOnce <- newIORef False
+    tryConnect connectedOnce out
 
-  doConnect out = runClient "127.0.0.1" (4000 + hydraNodeId) "/" $ \con -> do
-    action $ HydraNode hydraNodeId con out
+  tryConnect connectedOnce out =
+    doConnect connectedOnce out `catch` \(e :: IOException) -> do
+      readIORef connectedOnce >>= \case
+        False -> tryConnect connectedOnce out
+        True -> throwIO e
+
+  doConnect connectedOnce out = runClient "127.0.0.1" (4000 + hydraNodeId) "/" $ \con -> do
+    atomicWriteIORef connectedOnce True
+    action $ HydraClient hydraNodeId con out
     sendClose con ("Bye" :: Text)
 
   traceOnFailure f io = do
     io `onException` (readFileText f >>= say)
 
-newtype CannotStartHydraNode = CannotStartHydraNode Int deriving (Show)
-instance Exception CannotStartHydraNode
+newtype CannotStartHydraClient = CannotStartHydraClient Int deriving (Show)
+instance Exception CannotStartHydraClient
 
 hydraNodeProcess :: [String] -> CreateProcess
 hydraNodeProcess = proc "hydra-node"
@@ -232,11 +261,11 @@ checkProcessHasNotDied processHandle =
 allNodeIds :: [Int]
 allNodeIds = [1 .. 3]
 
-waitForNodesConnected :: [HydraNode] -> IO ()
+waitForNodesConnected :: HasCallStack => [HydraClient] -> IO ()
 waitForNodesConnected = mapM_ waitForNodeConnected
 
-waitForNodeConnected :: HydraNode -> IO ()
-waitForNodeConnected n@HydraNode{hydraNodeId} =
+waitForNodeConnected :: HasCallStack => HydraClient -> IO ()
+waitForNodeConnected n@HydraClient{hydraNodeId} =
   -- HACK(AB): This is gross, we hijack the node ids and because we know
   -- keys are just integers we can compute them but that's ugly -> use property
   -- party identifiers everywhere

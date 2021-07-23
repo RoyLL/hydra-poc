@@ -1,4 +1,5 @@
 {-# LANGUAGE TypeApplications #-}
+{-# OPTIONS_GHC -Wno-deferred-type-errors #-}
 
 -- | Unit tests of the the protocol logic in 'HeadLogic'. These are very fine
 -- grained and specific to individual steps in the protocol. More high-level of
@@ -14,7 +15,7 @@ import qualified Data.Set as Set
 import Hydra.HeadLogic (
   ClientInput (..),
   CoordinatedHeadState (..),
-  Effect (ClientEffect, NetworkEffect),
+  Effect (ClientEffect, Delay, NetworkEffect),
   Environment (..),
   Event (..),
   HeadParameters (..),
@@ -30,8 +31,7 @@ import Hydra.HeadLogic (
   update,
  )
 import Hydra.Ledger (Ledger (..), Party, Tx (..), deriveParty, generateKey, sign)
-import Hydra.Ledger.Builder (aValidTx, utxoRef)
-import Hydra.Ledger.Simple (SimpleTx (..), TxIn (..), simpleLedger)
+import Hydra.Ledger.Simple (SimpleTx (..), TxIn (..), aValidTx, simpleLedger, utxoRef)
 import Test.Hspec (
   Expectation,
   Spec,
@@ -81,41 +81,39 @@ spec = describe "Hydra Coordinated Head Protocol" $ do
 
     update env ledger s0 reqTx `shouldBe` Wait
 
-  it "requests snapshot when receives ReqTx given node is leader" $ do
+  it "requests new snapshot when receives ReqTx given node is leader" $ do
     let reqTx = NetworkEvent $ ReqTx 1 simpleTx
         leader = 1
         leaderEnv = envFor leader
         s0 = inOpenState threeParties ledger
 
     update leaderEnv ledger s0 reqTx
-      `hasEffect_` NetworkEffect (ReqSn (party leaderEnv) 1 [simpleTx])
+      `hasEffect_` Delay 0 DoSnapshot
 
-  it "does not request snapshots as non-leader" $ do
+  it "does not request new snapshot as non-leader" $ do
     let reqTx = NetworkEvent $ ReqTx 1 simpleTx
         nonLeaderEnv = envFor 2
         s0 = inOpenState threeParties ledger
 
     update nonLeaderEnv ledger s0 reqTx
-      `hasNoEffectSatisfying` isReqSn
+      `hasNoEffectSatisfying` isDoSnapshot
 
-  it "does not request snapshot when already having one in flight" $ do
+  it "delay snapshot request when already having one in flight" $ do
     let leaderEnv = envFor 1
         p = party leaderEnv
         s0 = inOpenState threeParties ledger
         firstReqSn = ReqSn p 1 [aValidTx 1]
-    -- In the first processing loop, all ReqTx will lead to a ReqSn
-    s1 <-
-      update leaderEnv ledger s0 (NetworkEvent $ ReqTx p (aValidTx 1))
-        `hasEffect` NetworkEffect firstReqSn
-    s2 <-
-      update leaderEnv ledger s1 (NetworkEvent $ ReqTx p (aValidTx 2))
-        `hasEffect` NetworkEffect (ReqSn p 1 [aValidTx 2, aValidTx 1])
-    -- Eventually, the leader's own ReqSn will be processed, resulting in an
-    -- AckSn and no further ReqTx should result in a ReqSn
-    s3 <-
-      update leaderEnv ledger s2 (NetworkEvent firstReqSn)
-        `hasEffectSatisfying` isAckSn
-    update leaderEnv ledger s3 (NetworkEvent $ ReqTx p (aValidTx 3))
+
+    s1 <- assertNewState $ update leaderEnv ledger s0 (NetworkEvent firstReqSn)
+
+    update leaderEnv ledger s1 DoSnapshot
+      `shouldBe` Wait
+
+  it "drop snapshot request when there's no seen transactions" $ do
+    let leaderEnv = envFor 1
+        s0 = inOpenState threeParties ledger
+
+    update leaderEnv ledger s0 DoSnapshot
       `hasNoEffectSatisfying` isReqSn
 
   it "confirms snapshot given it receives AckSn from all parties" $ do
@@ -160,6 +158,11 @@ spec = describe "Hydra Coordinated Head Protocol" $ do
 
   it "waits if we receive a snapshot with not-yet-seen transactions" $ do
     let event = NetworkEvent $ ReqSn 1 1 [SimpleTx 1 (utxoRef 1) (utxoRef 2)]
+    update env ledger (inOpenState threeParties ledger) event `shouldBe` Wait
+
+  it "waits if we receive an AckSn for an unseen snapshot" $ do
+    let snapshot = Snapshot 1 mempty []
+        event = NetworkEvent $ AckSn 1 (sign 1 snapshot) 1
     update env ledger (inOpenState threeParties ledger) event `shouldBe` Wait
 
   it "returns logic error if we receive a far-away snapshot (not the direct successor)" $ do
@@ -264,6 +267,11 @@ hasNoEffectSatisfying _ _ = pure ()
 isReqSn :: Effect tx -> Bool
 isReqSn = \case
   NetworkEffect ReqSn{} -> True
+  _ -> False
+
+isDoSnapshot :: Effect tx -> Bool
+isDoSnapshot = \case
+  Delay _ DoSnapshot -> True
   _ -> False
 
 isAckSn :: Effect tx -> Bool
