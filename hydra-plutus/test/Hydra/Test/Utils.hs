@@ -100,7 +100,7 @@ assertFinalState contract wallet predicate =
     "assert final state"
 
 assertContractFailed ::
-  (ContractConstraints schema, Monoid s) =>
+  Monoid s =>
   Contract s schema ContractError a ->
   Wallet ->
   String ->
