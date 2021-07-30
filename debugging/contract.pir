@@ -7181,6 +7181,28 @@
                   )
                   (termbind
                     (strict)
+                    (vardecl bad_name (fun Bool (fun Bool Bool)))
+                    (lam
+                      l
+                      Bool
+                      (lam
+                        r
+                        Bool
+                        [
+                          [
+                            [
+                              { [ Bool_match l ] (fun Unit Bool) }
+                              (lam thunk Unit r)
+                            ]
+                            (lam thunk Unit False)
+                          ]
+                          Unit
+                        ]
+                      )
+                    )
+                  )
+                  (termbind
+                    (strict)
                     (vardecl
                       bad_name
                       (all m (fun (type) (type)) (fun [Monad m] (all a (type) (all b (type) (fun [m a] (fun (fun a [m b]) [m b]))))))
@@ -16427,6 +16449,11 @@
                                                   (nonrec)
                                                   (termbind
                                                     (nonstrict)
+                                                    (vardecl ds TxInfo)
+                                                    [ scriptContextTxInfo ctx ]
+                                                  )
+                                                  (termbind
+                                                    (nonstrict)
                                                     (vardecl
                                                       collectComUtxos
                                                       [List TxOut]
@@ -16458,221 +16485,177 @@
                                                   )
                                                   [
                                                     [
-                                                      { and List }
-                                                      fFoldableNil_cfoldMap
+                                                      bad_name
+                                                      [
+                                                        [
+                                                          mustBeSignedByOneOf ds
+                                                        ]
+                                                        ctx
+                                                      ]
                                                     ]
                                                     [
-                                                      { build Bool }
-                                                      (abs
-                                                        a
-                                                        (type)
-                                                        (lam
-                                                          c
-                                                          (fun Bool (fun a a))
-                                                          (lam
-                                                            n
-                                                            a
-                                                            (let
-                                                              (nonrec)
-                                                              (termbind
-                                                                (nonstrict)
-                                                                (vardecl
-                                                                  ds TxInfo
-                                                                )
-                                                                [
-                                                                  scriptContextTxInfo
-                                                                  ctx
-                                                                ]
-                                                              )
+                                                      [
+                                                        bad_name
+                                                        [
+                                                          [
+                                                            [
+                                                              {
+                                                                { all List }
+                                                                (con bytestring)
+                                                              }
+                                                              fFoldableNil_cfoldMap
+                                                            ]
+                                                            [
                                                               [
+                                                                mustForwardParty
+                                                                ctx
+                                                              ]
+                                                              ds
+                                                            ]
+                                                          ]
+                                                          ds
+                                                        ]
+                                                      ]
+                                                      [
+                                                        [
+                                                          [
+                                                            {
+                                                              {
+                                                                checkScriptContext
+                                                                Transition
+                                                              }
+                                                              State
+                                                            }
+                                                            ctoBuiltinData
+                                                          ]
+                                                          [
+                                                            [
+                                                              [
+                                                                {
+                                                                  {
+                                                                    mustPayToTheScript
+                                                                    Transition
+                                                                  }
+                                                                  State
+                                                                }
+                                                                ctoBuiltinData
+                                                              ]
+                                                              [
+                                                                Open
                                                                 [
-                                                                  c
                                                                   [
-                                                                    [
-                                                                      mustBeSignedByOneOf
-                                                                      ds
-                                                                    ]
-                                                                    ctx
-                                                                  ]
-                                                                ]
-                                                                [
-                                                                  [
-                                                                    c
+                                                                    {
+                                                                      {
+                                                                        mapMaybe
+                                                                        TxOut
+                                                                      }
+                                                                      TxOut
+                                                                    }
                                                                     [
                                                                       [
                                                                         [
                                                                           {
                                                                             {
-                                                                              all
-                                                                              List
+                                                                              {
+                                                                                {
+                                                                                  bad_name
+                                                                                  Maybe
+                                                                                }
+                                                                                TxOut
+                                                                              }
+                                                                              (con bytestring)
                                                                             }
-                                                                            (con bytestring)
+                                                                            TxOut
                                                                           }
-                                                                          fFoldableNil_cfoldMap
+                                                                          fMonadMaybe
                                                                         ]
-                                                                        [
-                                                                          [
-                                                                            mustForwardParty
-                                                                            ctx
-                                                                          ]
-                                                                          ds
-                                                                        ]
+                                                                        txOutDatumHash
                                                                       ]
-                                                                      ds
-                                                                    ]
-                                                                  ]
-                                                                  [
-                                                                    [
-                                                                      c
                                                                       [
                                                                         [
                                                                           [
                                                                             {
                                                                               {
-                                                                                checkScriptContext
-                                                                                Transition
-                                                                              }
-                                                                              State
-                                                                            }
-                                                                            ctoBuiltinData
-                                                                          ]
-                                                                          [
-                                                                            [
-                                                                              [
                                                                                 {
                                                                                   {
-                                                                                    mustPayToTheScript
-                                                                                    Transition
+                                                                                    bad_name
+                                                                                    Maybe
                                                                                   }
-                                                                                  State
+                                                                                  (con bytestring)
                                                                                 }
-                                                                                ctoBuiltinData
-                                                                              ]
-                                                                              [
-                                                                                Open
-                                                                                [
-                                                                                  [
-                                                                                    {
-                                                                                      {
-                                                                                        mapMaybe
-                                                                                        TxOut
-                                                                                      }
-                                                                                      TxOut
-                                                                                    }
-                                                                                    [
-                                                                                      [
-                                                                                        [
-                                                                                          {
-                                                                                            {
-                                                                                              {
-                                                                                                {
-                                                                                                  bad_name
-                                                                                                  Maybe
-                                                                                                }
-                                                                                                TxOut
-                                                                                              }
-                                                                                              (con bytestring)
-                                                                                            }
-                                                                                            TxOut
-                                                                                          }
-                                                                                          fMonadMaybe
-                                                                                        ]
-                                                                                        txOutDatumHash
-                                                                                      ]
-                                                                                      [
-                                                                                        [
-                                                                                          [
-                                                                                            {
-                                                                                              {
-                                                                                                {
-                                                                                                  {
-                                                                                                    bad_name
-                                                                                                    Maybe
-                                                                                                  }
-                                                                                                  (con bytestring)
-                                                                                                }
-                                                                                                (con data)
-                                                                                              }
-                                                                                              TxOut
-                                                                                            }
-                                                                                            fMonadMaybe
-                                                                                          ]
-                                                                                          (lam
-                                                                                            ds
-                                                                                            (con bytestring)
-                                                                                            [
-                                                                                              [
-                                                                                                findDatum
-                                                                                                ds
-                                                                                              ]
-                                                                                              ds
-                                                                                            ]
-                                                                                          )
-                                                                                        ]
-                                                                                        [
-                                                                                          [
-                                                                                            {
-                                                                                              {
-                                                                                                {
-                                                                                                  bad_name
-                                                                                                  (con data)
-                                                                                                }
-                                                                                                [Maybe TxOut]
-                                                                                              }
-                                                                                              (con data)
-                                                                                            }
-                                                                                            [
-                                                                                              {
-                                                                                                fromBuiltinData
-                                                                                                TxOut
-                                                                                              }
-                                                                                              fFromDataTxOut_cfromBuiltinData
-                                                                                            ]
-                                                                                          ]
-                                                                                          getDatum
-                                                                                        ]
-                                                                                      ]
-                                                                                    ]
-                                                                                  ]
-                                                                                  collectComUtxos
-                                                                                ]
-                                                                              ]
-                                                                            ]
+                                                                                (con data)
+                                                                              }
+                                                                              TxOut
+                                                                            }
+                                                                            fMonadMaybe
+                                                                          ]
+                                                                          (lam
+                                                                            ds
+                                                                            (con bytestring)
                                                                             [
                                                                               [
-                                                                                [
-                                                                                  {
-                                                                                    {
-                                                                                      [
-                                                                                        {
-                                                                                          foldMap
-                                                                                          List
-                                                                                        }
-                                                                                        fFoldableNil_cfoldMap
-                                                                                      ]
-                                                                                      [[(lam k (type) (lam v (type) [List [[Tuple2 k] v]])) (con bytestring)] [[(lam k (type) (lam v (type) [List [[Tuple2 k] v]])) (con bytestring)] (con integer)]]
-                                                                                    }
-                                                                                    TxOut
-                                                                                  }
-                                                                                  fMonoidValue
-                                                                                ]
-                                                                                txOutValue
+                                                                                findDatum
+                                                                                ds
                                                                               ]
-                                                                              collectComUtxos
+                                                                              ds
+                                                                            ]
+                                                                          )
+                                                                        ]
+                                                                        [
+                                                                          [
+                                                                            {
+                                                                              {
+                                                                                {
+                                                                                  bad_name
+                                                                                  (con data)
+                                                                                }
+                                                                                [Maybe TxOut]
+                                                                              }
+                                                                              (con data)
+                                                                            }
+                                                                            [
+                                                                              {
+                                                                                fromBuiltinData
+                                                                                TxOut
+                                                                              }
+                                                                              fFromDataTxOut_cfromBuiltinData
                                                                             ]
                                                                           ]
+                                                                          getDatum
                                                                         ]
-                                                                        ctx
                                                                       ]
                                                                     ]
-                                                                    n
                                                                   ]
+                                                                  collectComUtxos
                                                                 ]
                                                               ]
-                                                            )
-                                                          )
-                                                        )
-                                                      )
+                                                            ]
+                                                            [
+                                                              [
+                                                                [
+                                                                  {
+                                                                    {
+                                                                      [
+                                                                        {
+                                                                          foldMap
+                                                                          List
+                                                                        }
+                                                                        fFoldableNil_cfoldMap
+                                                                      ]
+                                                                      [[(lam k (type) (lam v (type) [List [[Tuple2 k] v]])) (con bytestring)] [[(lam k (type) (lam v (type) [List [[Tuple2 k] v]])) (con bytestring)] (con integer)]]
+                                                                    }
+                                                                    TxOut
+                                                                  }
+                                                                  fMonoidValue
+                                                                ]
+                                                                txOutValue
+                                                              ]
+                                                              collectComUtxos
+                                                            ]
+                                                          ]
+                                                        ]
+                                                        ctx
+                                                      ]
                                                     ]
                                                   ]
                                                 )
