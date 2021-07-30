@@ -7181,6 +7181,28 @@
                   )
                   (termbind
                     (strict)
+                    (vardecl bad_name (fun Bool (fun Bool Bool)))
+                    (lam
+                      l
+                      Bool
+                      (lam
+                        r
+                        Bool
+                        [
+                          [
+                            [
+                              { [ Bool_match l ] (fun Unit Bool) }
+                              (lam thunk Unit r)
+                            ]
+                            (lam thunk Unit False)
+                          ]
+                          Unit
+                        ]
+                      )
+                    )
+                  )
+                  (termbind
+                    (strict)
                     (vardecl
                       bad_name
                       (all m (fun (type) (type)) (fun [Monad m] (all a (type) (all b (type) (fun [m a] (fun (fun a [m b]) [m b]))))))
@@ -16083,105 +16105,71 @@
                                                   Unit
                                                   [
                                                     [
-                                                      { and List }
-                                                      fFoldableNil_cfoldMap
+                                                      bad_name
+                                                      [
+                                                        [
+                                                          mustBeSignedByOneOf ds
+                                                        ]
+                                                        ctx
+                                                      ]
                                                     ]
                                                     [
-                                                      { build Bool }
-                                                      (abs
-                                                        a
-                                                        (type)
-                                                        (lam
-                                                          c
-                                                          (fun Bool (fun a a))
-                                                          (lam
-                                                            n
-                                                            a
+                                                      [
+                                                        bad_name
+                                                        [
+                                                          [
+                                                            [
+                                                              {
+                                                                { all List }
+                                                                (con bytestring)
+                                                              }
+                                                              fFoldableNil_cfoldMap
+                                                            ]
                                                             [
                                                               [
-                                                                c
-                                                                [
-                                                                  [
-                                                                    mustBeSignedByOneOf
-                                                                    ds
-                                                                  ]
-                                                                  ctx
-                                                                ]
+                                                                mustBurnParty
+                                                                ctx
                                                               ]
-                                                              [
-                                                                [
-                                                                  c
-                                                                  [
-                                                                    [
-                                                                      [
-                                                                        {
-                                                                          {
-                                                                            all
-                                                                            List
-                                                                          }
-                                                                          (con bytestring)
-                                                                        }
-                                                                        fFoldableNil_cfoldMap
-                                                                      ]
-                                                                      [
-                                                                        [
-                                                                          mustBurnParty
-                                                                          ctx
-                                                                        ]
-                                                                        ds
-                                                                      ]
-                                                                    ]
-                                                                    ds
-                                                                  ]
-                                                                ]
-                                                                [
-                                                                  [
-                                                                    c
-                                                                    [
-                                                                      [
-                                                                        [
-                                                                          {
-                                                                            {
-                                                                              checkScriptContext
-                                                                              Transition
-                                                                            }
-                                                                            State
-                                                                          }
-                                                                          ctoBuiltinData
-                                                                        ]
-                                                                        [
-                                                                          [
-                                                                            [
-                                                                              {
-                                                                                {
-                                                                                  mustPayToTheScript
-                                                                                  Transition
-                                                                                }
-                                                                                State
-                                                                              }
-                                                                              ctoBuiltinData
-                                                                            ]
-                                                                            Final
-                                                                          ]
-                                                                          [
-                                                                            lovelaceValueOf
-                                                                            (con
-                                                                              integer
-                                                                                0
-                                                                            )
-                                                                          ]
-                                                                        ]
-                                                                      ]
-                                                                      ctx
-                                                                    ]
-                                                                  ]
-                                                                  n
-                                                                ]
-                                                              ]
+                                                              ds
                                                             ]
-                                                          )
-                                                        )
-                                                      )
+                                                          ]
+                                                          ds
+                                                        ]
+                                                      ]
+                                                      [
+                                                        [
+                                                          [
+                                                            {
+                                                              {
+                                                                checkScriptContext
+                                                                Transition
+                                                              }
+                                                              State
+                                                            }
+                                                            ctoBuiltinData
+                                                          ]
+                                                          [
+                                                            [
+                                                              [
+                                                                {
+                                                                  {
+                                                                    mustPayToTheScript
+                                                                    Transition
+                                                                  }
+                                                                  State
+                                                                }
+                                                                ctoBuiltinData
+                                                              ]
+                                                              Final
+                                                            ]
+                                                            [
+                                                              lovelaceValueOf
+                                                              (con integer 0)
+                                                            ]
+                                                          ]
+                                                        ]
+                                                        ctx
+                                                      ]
                                                     ]
                                                   ]
                                                 )
