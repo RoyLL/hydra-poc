@@ -15,7 +15,7 @@ import Hydra.Ledger.Simple (SimpleTx)
 import Hydra.Logging (nullTracer)
 import System.IO.Temp (withSystemTempFile)
 import System.Process (CreateProcess (std_in, std_out), StdStream (CreatePipe, UseHandle), proc, withCreateProcess)
-import Test.Hspec (pendingWith, shouldReturn)
+import Test.Hspec (shouldReturn)
 import Test.Hspec.Core.Spec (Spec, describe, it)
 import Test.Hspec.QuickCheck (prop)
 import Test.Hydra.Prelude (failAfter)
@@ -45,7 +45,6 @@ spec = do
 
   describe "ExternalPAB" $ do
     it "publishes init tx using wallet 1 and observes it also" $ do
-      pendingWith "fails currently"
       failAfter 40 $
         withHydraPab $ do
           calledBack1 <- newEmptyMVar
@@ -61,7 +60,6 @@ spec = do
               takeMVar calledBack2 `shouldReturn` OnInitTx 100 [alice, bob, carol]
 
     it "publishes init tx, observes it and abort" $ do
-      pendingWith "fails currently"
       failAfter 40 $
         withHydraPab $ do
           calledBack1 <- newEmptyMVar

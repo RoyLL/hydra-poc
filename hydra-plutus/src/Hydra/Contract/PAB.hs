@@ -140,20 +140,35 @@ watch :: Contract (Last ObservedTx) (Endpoint "abort" ()) HydraPlutusError ()
 watch = do
   (contestationPeriod, parties, threadToken) <- watchInit
   tell $ Last $ Just $ OnInitTx contestationPeriod parties
-  selectList
-    [ Promise (watchForSM threadToken)
-    , abort threadToken
-    ]
-
-watchForSM :: AssetClass -> Contract (Last ObservedTx) s HydraPlutusError ()
-watchForSM threadToken = do
-  logInfo @String $ "watchForSM"
   let client = Head.machineClient threadToken
-  smState <- SM.waitForUpdate client
-  let mstate = tyTxOutData . fst <$> smState
-  case mstate of
-    Just Head.Final -> tell . Last $ Just OnAbortTx
-    _ -> logInfo @String $ "uninferrable state"
+  watchForSM client $
+    Promise $
+      selectList
+        [ endpoint @"abort" $ \_ -> do
+            logInfo @String $ "Receiving abort request."
+            void $ SM.runStep client Head.Abort
+        ]
+
+watchForSM ::
+  SM.StateMachineClient Head.State Head.Input ->
+  Promise (Last ObservedTx) schema HydraPlutusError () ->
+  Contract (Last ObservedTx) schema HydraPlutusError ()
+watchForSM client orElse = do
+  logInfo @String $ "watchForSM"
+  promise <- SM.waitForUpdateTimeout client orElse
+  awaitPromise promise >>= \case
+    SM.Timeout{} -> watchForSM client orElse
+    SM.InitialState{} -> watchForSM client orElse
+    SM.ContractEnded{} -> pure ()
+    SM.Transition _tx input _st -> onTransition input
+ where
+  onTransition = \case
+    Head.Abort -> do
+      logInfo @String $ "observing abort transition..."
+      tell . Last $ Just OnAbortTx
+      watchForSM client orElse
+    _ ->
+      logInfo @String $ "uninferrable transition"
 
 -- | Watch Initial script address to extract head's initial parameters and thread token.
 -- Relies on the fact that a participation token (payed to the address) uses the
